@@ -1,0 +1,7 @@
+ts_iso,mode,pair_id,slot,prompt,model,content,wall_time_sec,total_time_sec,load_time_sec,prompt_eval_time_sec,eval_time_sec,prompt_tokens,output_tokens,tokens_per_sec_wall,tokens_per_sec_generate
+2025-10-30T17:37:28Z,battle,523ee39f2776,A,do you know about from series from amazon,llama3.1:8b,"Yes, I'm familiar with Amazon's ""From"" series. It's a mystery-thriller franchise that premiered in 2022 on Amazon Prime Video.
+
+The first season of ""From"" follows a group of strangers who find themselves trapped in the small town of Eden, Nebraska, where they must work together to uncover the dark secrets behind their confinement.
+
+If you have any specific questions about the show or its plot, I'll do my best to provide more information!",8.501,8.495,3.368,0.557,4.538,37,95,11.18,20.94
+2025-10-30T17:37:28Z,battle,523ee39f2776,B,do you know about from series from amazon,phi3:3.8b,"Yes, I am aware of numerous TV series available on Amazon Prime Video such as ""The Marvelous Mrs. Maisel,"" ""Bridgerton,"" ""Mozart in the Jungle,"" etc., but please note that availability can vary by region and content may change over time.",3.845,3.834,1.939,0.461,1.423,38,60,15.6,42.16
