@@ -1,4 +1,3 @@
-// ====== DOM refs ======
 const form = document.getElementById('chat-form');
 const promptEl = document.getElementById('prompt');
 const statusEl = document.getElementById('status');
@@ -7,17 +6,29 @@ const singleRow = document.getElementById('single-row');
 const battleRow = document.getElementById('battle-row');
 const modeInputs = [...document.querySelectorAll('input[name="mode"]')];
 
-const modelEl  = document.getElementById('model');     // single
-const modelAEl = document.getElementById('model_a');   // battle
-const modelBEl = document.getElementById('model_b');   // battle
+const modelEl = document.getElementById('model');     // single
+const modelAEl = document.getElementById('model_a');  // battle
+const modelBEl = document.getElementById('model_b');  // battle
 
-// ----- Single-mode output + metrics -----
+// single-mode output
 const respEl = document.getElementById('response');
+
+// battle elements
+const br = document.getElementById('battle-responses');
+const hdrA = document.getElementById('hdr-a');
+const hdrB = document.getElementById('hdr-b');
+const respA = document.getElementById('resp-a');
+const respB = document.getElementById('resp-b');
+const metA = document.getElementById('metrics-a');
+const metB = document.getElementById('metrics-b');
+
+// Optional Speak buttons (add these IDs to your HTML near outputs if not present)
+const speakSingleBtn = document.getElementById('speak-single'); // <button id="speak-single">🔊 Speak</button>
+const speakABtn = document.getElementById('speak-a');           // <button id="speak-a">🔊 A</button>
+const speakBBtn = document.getElementById('speak-b');           // <button id="speak-b">🔊 B</button>
+
 function setSingleMetrics(d) {
-  const set = (id, v) => {
-    const el = document.getElementById(id);
-    if (el) el.textContent = v;
-  };
+  const set = (id, v) => document.getElementById(id).textContent = v;
   set('m-model', d.model);
   set('m-wall', d.wall_time_sec);
   set('m-total', d.total_time_sec);
@@ -30,29 +41,7 @@ function setSingleMetrics(d) {
   set('m-tpsg', d.tokens_per_sec_generate);
 }
 
-// ----- Battle elements (support old/new IDs) -----
-const arena = document.getElementById('arena') || document.getElementById('battle-responses');
-const hdrA  = document.getElementById('hdr-a');
-const hdrB  = document.getElementById('hdr-b');
-const respA = document.getElementById('resp-a');
-const respB = document.getElementById('resp-b');
-// prefer new ids; fallback to old
-const metA  = document.getElementById('met-a')  || document.getElementById('metrics-a');
-const metB  = document.getElementById('met-b')  || document.getElementById('metrics-b');
-
-// ====== Helpers ======
-function setBusy(b) {
-  const btn = form.querySelector('button');
-  if (btn) btn.disabled = b;
-  if (statusEl) statusEl.textContent = b ? 'Thinking...' : '';
-}
-
-const parseHttpError = async (res) => {
-  try { return await res.text(); } catch { return `${res.status} ${res.statusText}`; }
-};
-
 function fillMetricsTable(tbody, d) {
-  if (!tbody) return; // guard if element not present
   tbody.innerHTML = `
     <tr><th>Model</th><td>${d.model}</td></tr>
     <tr><th>Wall time (s)</th><td>${d.wall_time_sec}</td></tr>
@@ -67,129 +56,132 @@ function fillMetricsTable(tbody, d) {
   `;
 }
 
-// ====== Models loader ======
 async function loadModels() {
-  setBusy(true);
-  if (modelEl)  modelEl.disabled  = true;
-  if (modelAEl) modelAEl.disabled = true;
-  if (modelBEl) modelBEl.disabled = true;
+  const r = await fetch('/api/models');
+  if (!r.ok) return;
+  const data = await r.json();
+  const names = (data.models || []).sort();
 
+  const fill = (sel) => {
+    sel.innerHTML = '';
+    names.forEach(name => {
+      const opt = document.createElement('option');
+      opt.value = name;
+      opt.textContent = name;
+      sel.appendChild(opt);
+    });
+  };
+
+  fill(modelEl);
+  fill(modelAEl);
+  fill(modelBEl);
+
+  const llama = names.find(n => n.startsWith('llama3.1:8b')) || names[0];
+  const phi = names.find(n => n.startsWith('phi3:3.8b')) || names[1] || names[0];
+
+  if (llama) modelEl.value = llama;
+  if (llama) modelAEl.value = llama;
+  if (phi)   modelBEl.value = phi;
+}
+
+function updateModeUI() {
+  const mode = modeInputs.find(i => i.checked).value;
+  const single = mode === 'single';
+  singleRow.style.display = single ? '' : 'none';
+  battleRow.style.display = single ? 'none' : '';
+  document.querySelector('section.card h2').textContent = single ? 'Response' : 'Response (Single)';
+  br.style.display = single ? 'none' : '';
+}
+
+// ---------- TTS helpers ----------
+async function playTTS(text, options = {}) {
   try {
-    const r = await fetch('/api/models');
-    if (!r.ok) {
-      const msg = await parseHttpError(r);
-      console.warn('Failed to load /api/models:', msg);
-      if (statusEl) statusEl.textContent = 'Could not load model list. Is /api/models implemented?';
-      return;
-    }
-
+    const r = await fetch('/api/tts', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ text, ...options })
+    });
+    if (!r.ok) throw new Error(await r.text());
     const data = await r.json();
-    const names = (data.models || []).slice().sort();
-
-    const fill = (sel) => {
-      if (!sel) return;
-      sel.innerHTML = '';
-      names.forEach(name => {
-        const opt = document.createElement('option');
-        opt.value = name;
-        opt.textContent = name;
-        sel.appendChild(opt);
-      });
-    };
-
-    fill(modelEl);
-    fill(modelAEl);
-    fill(modelBEl);
-
-    // Defaults
-    const llama = names.find(n => n.startsWith('llama3.1:8b')) || names[0];
-    const phi   = names.find(n => n.startsWith('phi3:3.8b'))   || names.find(n => n.startsWith('phi3')) || names[1] || names[0];
-
-    if (llama && modelEl)  modelEl.value  = llama;   // single default
-    if (llama && modelAEl) modelAEl.value = llama;   // battle A
-    if (phi   && modelBEl) modelBEl.value = phi;     // battle B
-  } catch (err) {
-    console.error('loadModels() error:', err);
-    if (statusEl) statusEl.textContent = 'Failed to load models (see console).';
-  } finally {
-    setBusy(false);
-    if (modelEl)  modelEl.disabled  = false;
-    if (modelAEl) modelAEl.disabled = false;
-    if (modelBEl) modelBEl.disabled = false;
+    if (data.audio_url) {
+      const audio = new Audio(data.audio_url);
+      await audio.play();
+    }
+  } catch (e) {
+    console.error('TTS error:', e);
   }
 }
 
-// ====== Mode toggle ======
-function updateModeUI() {
-  const mode = modeInputs.find(i => i.checked)?.value || 'single';
-  const single = mode === 'single';
+// Wire speak buttons (if present)
+speakSingleBtn?.addEventListener('click', () => {
+  const text = respEl.textContent || '';
+  if (text.trim()) playTTS(text);
+});
+speakABtn?.addEventListener('click', () => {
+  const text = respA.textContent || '';
+  if (text.trim()) playTTS(text);
+});
+speakBBtn?.addEventListener('click', () => {
+  const text = respB.textContent || '';
+  if (text.trim()) playTTS(text);
+});
 
-  if (singleRow) singleRow.style.display = single ? '' : 'none';
-  if (battleRow) battleRow.style.display = single ? 'none' : '';
-
-  // Show/Hide sections
-  const singleRespCard   = document.getElementById('response')?.parentElement;
-  const singleMetricCard = document.getElementById('metrics')?.parentElement;
-  if (singleRespCard)   singleRespCard.style.display   = single ? '' : 'none';
-  if (singleMetricCard) singleMetricCard.style.display = single ? '' : 'none';
-  if (arena)            arena.style.display            = single ? 'none' : '';
-}
 modeInputs.forEach(i => i.addEventListener('change', updateModeUI));
 
-// ====== Submit handler ======
 form.addEventListener('submit', async (e) => {
   e.preventDefault();
-  const mode = modeInputs.find(i => i.checked)?.value || 'single';
-  const prompt = (promptEl?.value || '').trim();
+  const mode = modeInputs.find(i => i.checked).value;
+  const prompt = promptEl.value.trim();
   if (!prompt) return;
 
-  setBusy(true);
+  statusEl.textContent = 'Thinking...';
+  form.querySelector('button').disabled = true;
 
   try {
     if (mode === 'single') {
-      const model = modelEl?.value;
+      const model = modelEl.value;
       const r = await fetch('/api/chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ prompt, model })
       });
-      if (!r.ok) throw new Error(await parseHttpError(r));
+      if (!r.ok) throw new Error(await r.text());
       const data = await r.json();
-
-      if (respEl) respEl.textContent = data.content || '';
+      respEl.textContent = data.content || '';
       setSingleMetrics(data);
+      br.style.display = 'none';
+      // auto-speak (optional). Comment out if you prefer manual button only.
+      // await playTTS(data.content || '');
     } else {
-      const model_a = modelAEl?.value;
-      const model_b = modelBEl?.value;
+      const model_a = modelAEl.value;
+      const model_b = modelBEl.value;
       const r = await fetch('/api/battle', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ prompt, model_a, model_b })
       });
-      if (!r.ok) throw new Error(await parseHttpError(r));
+      if (!r.ok) throw new Error(await r.text());
       const data = await r.json();
       const [A, B] = data.results || [];
-      if (!A || !B) throw new Error('Battle response malformed.');
-
-      if (hdrA)  hdrA.textContent  = `Model A: ${A.model}`;
-      if (hdrB)  hdrB.textContent  = `Model B: ${B.model}`;
-      if (respA) respA.textContent = A.content || '';
-      if (respB) respB.textContent = B.content || '';
+      hdrA.textContent = `Model A: ${A.model}`;
+      hdrB.textContent = `Model B: ${B.model}`;
+      respA.textContent = A.content || '';
+      respB.textContent = B.content || '';
       fillMetricsTable(metA, A);
       fillMetricsTable(metB, B);
+      br.style.display = '';
+      // auto-speak both (optional)
+      // await playTTS(A.content || '');
+      // await playTTS(B.content || '');
     }
-
-    if (statusEl) statusEl.textContent = 'Done';
+    statusEl.textContent = 'Done';
   } catch (err) {
+    statusEl.textContent = 'Error';
     console.error(err);
-    if (statusEl) statusEl.textContent = 'Error';
     alert(String(err));
   } finally {
-    setBusy(false);
+    form.querySelector('button').disabled = false;
   }
 });
 
-// ====== Bootstrap ======
 document.addEventListener('DOMContentLoaded', async () => {
   await loadModels();
   updateModeUI();

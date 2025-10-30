@@ -7,3 +7,4 @@ requests>=2.32
 gspread>=6.0.0
 google-auth>=2.0.0
 backoff>=2.2.1
+pyttsx3
