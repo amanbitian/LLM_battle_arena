@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Ollama Web Bench</title>
+  <link rel="stylesheet" href="/static/css/styles.css" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+</head>
+<body>
+  <header>
+    <h1>Ollama Web Bench</h1>
+    <p class="sub">Local FastAPI + Ollama • Simple metrics for each response</p>
+  </header>
+
+  <main class="container">
+    <section class="card">
+      <form id="chat-form">
+        <label for="prompt">Prompt</label>
+        <textarea id="prompt" name="prompt" rows="5" placeholder="Type your question..."></textarea>
+        <div class="actions">
+          <button type="submit" id="send">Send</button>
+          <span id="status" class="muted"></span>
+        </div>
+      </form>
+    </section>
+
+    <section class="card">
+      <h2>Response</h2>
+      <pre id="response" class="mono"></pre>
+    </section>
+
+    <section class="card">
+      <h2>Metrics</h2>
+      <table id="metrics">
+        <tbody>
+          <tr><th>Model</th><td id="m-model">–</td></tr>
+          <tr><th>Wall time (s)</th><td id="m-wall">–</td></tr>
+          <tr><th>Total (s)</th><td id="m-total">–</td></tr>
+          <tr><th>Load (s)</th><td id="m-load">–</td></tr>
+          <tr><th>Prompt eval (s)</th><td id="m-peval">–</td></tr>
+          <tr><th>Generate (s)</th><td id="m-eval">–</td></tr>
+          <tr><th>Prompt tokens</th><td id="m-ptok">–</td></tr>
+          <tr><th>Output tokens</th><td id="m-otok">–</td></tr>
+          <tr><th>Tok/s (wall)</th><td id="m-tpsw">–</td></tr>
+          <tr><th>Tok/s (generate)</th><td id="m-tpsg">–</td></tr>
+        </tbody>
+      </table>
+    </section>
+  </main>
+
+  <script src="/static/js/app.js"></script>
+</body>
+</html>
