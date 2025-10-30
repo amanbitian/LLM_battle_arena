@@ -16,3 +16,7 @@ button:disabled { opacity:.6; cursor:not-allowed; }
 table { width:100%; border-collapse:collapse; }
 th, td { padding:8px; border-bottom:1px solid #2a2e37; text-align:left; }
 th { color:#cfd7ff; width:220px; }
+.row { display:flex; align-items:center; gap:12px; margin-bottom:12px; }
+.inline { display:flex; gap:16px; align-items:center; }
+.col { flex:1; display:flex; flex-direction:column; gap:6px; }
+.grid2 { display:grid; grid-template-columns: 1fr 1fr; gap:16px; }

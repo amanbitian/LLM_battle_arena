@@ -1,26 +1,24 @@
 import time
+from typing import List, Optional
 from .ollama_client import OllamaClient
 from .timing import ns_to_s
 from ..models.schemas import ChatResponse
 from ..core.config import settings
 
-SYSTEM_PROMPT = (
-    "You are a professional assistant. "
-    "Be concise, correct, and helpful. When relevant, show numbered steps. "
-)
+SYSTEM_PROMPT = "You are a professional assistant. Be concise, correct, and helpful."
 
 class ChatService:
-    """Business logic for chatting + extracting metrics."""
+    """Business logic: one ask() and a duel() for battle mode."""
     def __init__(self, client: OllamaClient | None = None):
         self.client = client or OllamaClient()
 
-    def ask(self, prompt: str) -> ChatResponse:
+    def ask(self, prompt: str, model: Optional[str] = None) -> ChatResponse:
         t0 = time.perf_counter()
-        data = self.client.chat(SYSTEM_PROMPT, prompt)
+        data = self.client.chat(SYSTEM_PROMPT, prompt, model=model)
         t1 = time.perf_counter()
 
         msg = data.get("message", {}).get("content", "")
-        model = data.get("model", settings.ollama_model)
+        model_used = data.get("model", model or settings.ollama_model)
 
         total_s = ns_to_s(data.get("total_duration", 0))
         load_s = ns_to_s(data.get("load_duration", 0))
@@ -34,7 +32,7 @@ class ChatService:
         tps_model = (o_count / eval_s) if eval_s > 0 else 0.0
 
         return ChatResponse(
-            model=model,
+            model=model_used,
             content=msg.strip(),
             wall_time_sec=round(wall_s, 3),
             total_time_sec=round(total_s, 3),
@@ -45,9 +43,14 @@ class ChatService:
             output_tokens=o_count,
             tokens_per_sec_wall=round(tps_wall, 2),
             tokens_per_sec_generate=round(tps_model, 2),
-            raw_model_stats={
-                k: v for k, v in data.items()
-                if k in {"total_duration","load_duration","prompt_eval_duration","eval_duration",
-                         "prompt_eval_count","eval_count"}
-            },
+            raw_model_stats={k: data[k] for k in (
+                "total_duration","load_duration","prompt_eval_duration",
+                "eval_duration","prompt_eval_count","eval_count"
+            ) if k in data},
         )
+
+    def duel(self, prompt: str, model_a: str, model_b: str) -> List[ChatResponse]:
+        """Run the same prompt on two models and return both results."""
+        res_a = self.ask(prompt, model=model_a)
+        res_b = self.ask(prompt, model=model_b)
+        return [res_a, res_b]

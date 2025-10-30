@@ -8,21 +8,47 @@
 </head>
 <body>
   <header>
-    <h1>Ollama Web Bench</h1>
-    <p class="sub">Local FastAPI + Ollama • Simple metrics for each response</p>
+    <h1>Pratap LLM Battle Arena</h1>
+    <p class="sub">Comparing multiple open source LLM models • Simple metrics for each response</p>
   </header>
 
   <main class="container">
     <section class="card">
-      <form id="chat-form">
-        <label for="prompt">Prompt</label>
-        <textarea id="prompt" name="prompt" rows="5" placeholder="Type your question..."></textarea>
-        <div class="actions">
-          <button type="submit" id="send">Send</button>
-          <span id="status" class="muted"></span>
+    <form id="chat-form">
+      <div class="row">
+        <label>Mode</label>
+        <div class="inline">
+          <label><input type="radio" name="mode" value="single" checked> Single</label>
+          <label><input type="radio" name="mode" value="battle"> Battle Arena</label>
         </div>
-      </form>
+      </div>
+
+      <div class="row" id="single-row">
+        <label for="model">Model</label>
+        <select id="model" name="model"></select>
+      </div>
+
+      <div class="row" id="battle-row" style="display:none;">
+        <div class="col">
+          <label for="model_a">Model A</label>
+          <select id="model_a"></select>
+        </div>
+        <div class="col">
+          <label for="model_b">Model B</label>
+          <select id="model_b"></select>
+        </div>
+      </div>
+
+      <label for="prompt">Prompt</label>
+      <textarea id="prompt" name="prompt" rows="5" placeholder="Type your question..."></textarea>
+
+      <div class="actions">
+        <button type="submit" id="send">Send</button>
+        <span id="status" class="muted"></span>
+      </div>
+    </form>
     </section>
+
 
     <section class="card">
       <h2>Response</h2>
@@ -46,6 +72,26 @@
         </tbody>
       </table>
     </section>
+    <section class="card" id="battle-responses" style="display:none;">
+    <h2>Battle Results</h2>
+    <div class="grid2">
+      <div>
+        <h3 id="hdr-a">Model A</h3>
+        <pre id="resp-a" class="mono"></pre>
+        <table>
+          <tbody id="metrics-a"></tbody>
+        </table>
+      </div>
+      <div>
+        <h3 id="hdr-b">Model B</h3>
+        <pre id="resp-b" class="mono"></pre>
+        <table>
+          <tbody id="metrics-b"></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
   </main>
 
   <script src="/static/js/app.js"></script>
