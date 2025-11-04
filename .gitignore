@@ -1,15 +1,10 @@
-.idea/
-__pycache__/
-*.pyc
-*.pyo
-*.pyd
-.DS_Store
-venv/
-.DS_Store
-__pycache__/
-*.py[cod]
+.idea/   ### IDE and Editos setting
+.DS_Store   ## MacOS System Files
+venv/   #Virtual environment
+
 # Python cache and compiled files
 __pycache__/
 *.pyc
 *.pyo
 *.pyd
+*.py[cod]
