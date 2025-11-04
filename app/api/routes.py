@@ -1,11 +1,13 @@
 from __future__ import annotations
-
 from pathlib import Path
 from typing import Dict, List, Optional
-
 from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
+from fastapi import APIRouter, HTTPException, Request
+from fastapi.responses import HTMLResponse, JSONResponse
+from pydantic import BaseModel
+from ..services.tts_service import synth_to_file, list_voices
 
 # --- storage: prefer Google Sheets, fall back to CSV if not configured ---
 try:
@@ -142,6 +144,25 @@ def battle(req: BattleRequest):
         return {"results": [r.model_dump() for r in results]}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e)) from e
+
+# ---------- TTS models ----------
+class TTSRequest(BaseModel):
+    text: str
+    voice_id: str | None = None
+    rate: int | None = None       # e.g., 180
+    volume: float | None = None   # 0.0 – 1.0
+
+@router.get("/api/voices", tags=["tts"])
+def voices():
+    return {"voices": list_voices()}
+
+@router.post("/api/tts", tags=["tts"])
+def tts(req: TTSRequest):
+    try:
+        url = synth_to_file(req.text, req.voice_id, req.rate, req.volume)
+        return {"audio_url": url}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 # -----------------------------------------------------------------------------
