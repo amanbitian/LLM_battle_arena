@@ -4,4 +4,12 @@ __pycache__/
 *.pyo
 *.pyd
 .DS_Store
-venv/.DS_Store
+venv/
+.DS_Store
+__pycache__/
+*.py[cod]
+# Python cache and compiled files
+__pycache__/
+*.pyc
+*.pyo
+*.pyd

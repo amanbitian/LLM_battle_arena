@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <title>Ollama Web Bench</title>
+  <title>LLM Battle</title>
   <link rel="stylesheet" href="/static/css/styles.css" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
 </head>
@@ -14,96 +14,100 @@
 
   <main class="container">
     <section class="card">
-    <form id="chat-form">
-      <div class="row">
-        <label>Mode</label>
-        <div class="inline">
-          <label><input type="radio" name="mode" value="single" checked> Single</label>
-          <label><input type="radio" name="mode" value="battle"> Battle Arena</label>
+      <form id="chat-form">
+        <div class="row">
+          <label>Mode</label>
+          <div class="inline">
+            <label><input type="radio" name="mode" value="single" checked> Single</label>
+            <label><input type="radio" name="mode" value="battle"> Battle Arena</label>
+          </div>
         </div>
-      </div>
 
-      <div class="row" id="single-row">
-        <label for="model">Model</label>
-        <select id="model" name="model"></select>
-      </div>
-
-      <div class="row" id="battle-row" style="display:none;">
-        <div class="col">
-          <label for="model_a">Model A</label>
-          <select id="model_a"></select>
+        <!-- SINGLE select -->
+        <div class="row" id="single-row">
+          <label for="model">Model</label>
+          <select id="model" name="model"></select>
         </div>
-        <div class="col">
-          <label for="model_b">Model B</label>
-          <select id="model_b"></select>
+
+        <!-- BATTLE selects -->
+        <div class="row" id="battle-row" style="display:none;">
+          <div class="col">
+            <label for="model_a">Model A</label>
+            <select id="model_a"></select>
+          </div>
+          <div class="col">
+            <label for="model_b">Model B</label>
+            <select id="model_b"></select>
+          </div>
         </div>
-      </div>
 
-      <label for="prompt">Prompt</label>
-      <textarea id="prompt" name="prompt" rows="5" placeholder="Type your question..."></textarea>
+        <label for="prompt">Prompt</label>
+        <textarea id="prompt" name="prompt" rows="5" placeholder="Type your question..."></textarea>
 
-      <div class="actions">
-        <button type="submit" id="send">Send</button>
-        <span id="status" class="muted"></span>
-      </div>
-    </form>
+        <div class="actions">
+          <button type="submit" id="send">Send</button>
+          <span id="status" class="muted"></span>
+        </div>
+      </form>
     </section>
 
-    <!-- speaker logo -->
-<div class="actions" style="margin-top:.5rem">
-  <button id="speak-single" type="button">🔊 Speak</button>
-</div>
+    <!-- ===================== SINGLE BLOCK (only in Single mode) ===================== -->
+    <div id="single-block">
+      <div class="actions" id="speak-row-single" style="margin-top:.5rem;">
+        <button id="speak-single" type="button">🔊 Speak</button>
+      </div>
 
-<!-- In the battle section header -->
-<div class="actions" style="margin:.5rem 0">
-  <button id="speak-a" type="button">🔊 Speak A</button>
-  <button id="speak-b" type="button">🔊 Speak B</button>
-</div>
+      <section class="card" id="single-response-card">
+        <h2>Response</h2>
+        <pre id="response" class="mono"></pre>
+      </section>
 
-
-
-    <section class="card">
-      <h2>Response</h2>
-      <pre id="response" class="mono"></pre>
-    </section>
-
-    <section class="card">
-      <h2>Metrics</h2>
-      <table id="metrics">
-        <tbody>
-          <tr><th>Model</th><td id="m-model">–</td></tr>
-          <tr><th>Wall time (s)</th><td id="m-wall">–</td></tr>
-          <tr><th>Total (s)</th><td id="m-total">–</td></tr>
-          <tr><th>Load (s)</th><td id="m-load">–</td></tr>
-          <tr><th>Prompt eval (s)</th><td id="m-peval">–</td></tr>
-          <tr><th>Generate (s)</th><td id="m-eval">–</td></tr>
-          <tr><th>Prompt tokens</th><td id="m-ptok">–</td></tr>
-          <tr><th>Output tokens</th><td id="m-otok">–</td></tr>
-          <tr><th>Tok/s (wall)</th><td id="m-tpsw">–</td></tr>
-          <tr><th>Tok/s (generate)</th><td id="m-tpsg">–</td></tr>
-        </tbody>
-      </table>
-    </section>
-    <section class="card" id="battle-responses" style="display:none;">
-    <h2>Battle Results</h2>
-    <div class="grid2">
-      <div>
-        <h3 id="hdr-a">Model A</h3>
-        <pre id="resp-a" class="mono"></pre>
-        <table>
-          <tbody id="metrics-a"></tbody>
+      <section class="card" id="single-metrics-card">
+        <h2>Metrics</h2>
+        <table id="metrics">
+          <tbody>
+            <tr><th>Model</th><td id="m-model">–</td></tr>
+            <tr><th>Wall time (s)</th><td id="m-wall">–</td></tr>
+            <tr><th>Total (s)</th><td id="m-total">–</td></tr>
+            <tr><th>Load (s)</th><td id="m-load">–</td></tr>
+            <tr><th>Prompt eval (s)</th><td id="m-peval">–</td></tr>
+            <tr><th>Generate (s)</th><td id="m-eval">–</td></tr>
+            <tr><th>Prompt tokens</th><td id="m-ptok">–</td></tr>
+            <tr><th>Output tokens</th><td id="m-otok">–</td></tr>
+            <tr><th>Tok/s (wall)</th><td id="m-tpsw">–</td></tr>
+            <tr><th>Tok/s (generate)</th><td id="m-tpsg">–</td></tr>
+          </tbody>
         </table>
-      </div>
-      <div>
-        <h3 id="hdr-b">Model B</h3>
-        <pre id="resp-b" class="mono"></pre>
-        <table>
-          <tbody id="metrics-b"></tbody>
-        </table>
-      </div>
+      </section>
     </div>
-  </section>
 
+    <!-- ===================== BATTLE BLOCK (only in Battle mode) ===================== -->
+    <div id="battle-block" style="display:none;">
+      <div class="actions" id="speak-row-battle" style="margin:.5rem 0;">
+        <button id="speak-a" type="button">🔊 Speak A</button>
+        <button id="speak-b" type="button">🔊 Speak B</button>
+      </div>
+
+      <section class="card" id="battle-responses">
+        <h2>Battle Results</h2>
+        <div class="grid2">
+          <div>
+            <h3 id="hdr-a">Model A</h3>
+            <pre id="resp-a" class="mono"></pre>
+            <table>
+              <tbody id="metrics-a"></tbody>
+            </table>
+          </div>
+          <div>
+            <h3 id="hdr-b">Model B</h3>
+            <pre id="resp-b" class="mono"></pre>
+            <table>
+              <tbody id="metrics-b"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+    </div>
   </main>
 
   <script src="/static/js/app.js"></script>
