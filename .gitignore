@@ -1,0 +1,10 @@
+.idea/   ### IDE and Editos setting
+.DS_Store   ## MacOS System Files
+venv/   #Virtual environment
+
+# Python cache and compiled files
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.py[cod]
